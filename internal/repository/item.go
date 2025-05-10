@@ -20,4 +20,3 @@ func GetProductByID(id int) (*Product, error) {
 	}
 	return nil, errors.New("product not found")
 }
-

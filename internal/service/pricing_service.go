@@ -9,8 +9,14 @@ import (
 )
 
 type OrderItem struct {
-	ProductID int `json:"product_id"`
-	Quantity  int `json:"quantity"`
+	ProductID int `json:"product_id" validate:"required,gt=0"`
+	Quantity  int `json:"quantity" validate:"required,gt=0"`
+}
+
+type OrderRequest struct {
+	Order struct {
+		Items []OrderItem `json:"items" validate:"required,dive"`
+	} `json:"order" validate:"required"`
 }
 
 type PricedItem struct {

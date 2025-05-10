@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"subito-cart/internal/service"
+	"subito-cart/internal/validator"
 
 	"github.com/gorilla/mux"
 )
@@ -27,14 +28,20 @@ func RegisterOrderRoutes(r *mux.Router) {
 
 func handleOrder(w http.ResponseWriter, r *http.Request) {
 	var req orderRequest
+	//Parsing
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "Invalid request", http.StatusBadRequest)
 		return
 	}
-
+	//Reqeust Validation
+	if err := validator.ValidateStruct(&req); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	//Business Logic
 	orderID, totalPrice, totalVAT, pricedItems, err := service.CalculatePricing(req.Order.Items)
 	if err != nil {
-		http.Error(w, "Failed to calculate order", http.StatusInternalServerError)
+		http.Error(w, "Failed process order", http.StatusInternalServerError)
 		return
 	}
 
