@@ -1,6 +1,7 @@
 package service
 
 import (
+	"math"
 	"math/rand"
 	"time"
 
@@ -35,6 +36,9 @@ func CalculatePricing(items []OrderItem) (int, float64, float64, []PricedItem, e
 		itemPrice := float64(item.Quantity) * product.Price
 		itemVAT := itemPrice * product.VAT
 
+		itemPrice = roundToTwoDecimals(itemPrice)
+		itemVAT = roundToTwoDecimals(itemVAT)
+
 		totalPrice += itemPrice
 		totalVAT += itemVAT
 
@@ -46,8 +50,11 @@ func CalculatePricing(items []OrderItem) (int, float64, float64, []PricedItem, e
 		})
 	}
 
+	totalPrice = roundToTwoDecimals(totalPrice)
+	totalVAT = roundToTwoDecimals(totalVAT)
+
 	orderID := generateOrderID()
-	return orderID, round(totalPrice), round(totalVAT), result, nil
+	return orderID, totalPrice, totalVAT, result, nil
 }
 
 var rng = rand.New(rand.NewSource(time.Now().UnixNano()))
@@ -56,6 +63,6 @@ func generateOrderID() int {
 	return rng.Intn(1_000_000_000)
 }
 
-func round(f float64) float64 {
-	return float64(int(f*100+0.5)) / 100
+func roundToTwoDecimals(f float64) float64 {
+	return math.Round(f*100) / 100
 }
