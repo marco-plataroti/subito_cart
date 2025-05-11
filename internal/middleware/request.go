@@ -13,11 +13,16 @@ type RequestValidator interface {
 	Validate() error
 }
 
+type contextKey string
+
+const requestKey = contextKey("validated_request")
+
 // WithRequestValidation creates a middleware that validates the request body
 func WithRequestValidation[T RequestValidator](next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// Read the request body
 		body, err := io.ReadAll(r.Body)
+		defer r.Body.Close()
 		if err != nil {
 			errs.SendErrorResponse(w, http.StatusBadRequest, "Failed to read request body", []errs.Error{
 				{
@@ -49,7 +54,7 @@ func WithRequestValidation[T RequestValidator](next http.HandlerFunc) http.Handl
 		}
 
 		// Store the validated request in the context
-		ctx := context.WithValue(r.Context(), "request", req)
+		ctx := context.WithValue(r.Context(), requestKey, req)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	}
 }

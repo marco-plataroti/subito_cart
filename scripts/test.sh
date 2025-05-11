@@ -2,4 +2,4 @@
 set -e
 
 echo "Running tests..."
-go test ./...
+go test ./... -v
