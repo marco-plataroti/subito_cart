@@ -24,12 +24,16 @@ Ensure you have the following tools installed:
 - (Optional) [Go](https://go.dev/) — only required for local development outside Docker
 
 ### 📦 Clone the Repository
-
 ```bash
 git clone https://github.com/marco-plataroti/subito_cart.git
 # OR SSH (if you have access configured):
 # git clone git@github.com:marco-plataroti/subito_cart.git
 cd subito_cart
+```
+
+### 🔐 Make Scripts Executable
+```bash
+chmod +x scripts/*.sh
 ```
 
 ## 🏗️ Build & Run
@@ -40,7 +44,6 @@ docker build -t subito_cart .
 ```
 
 ### 🧱 Step 2: Build the Go binary inside the container
-
 ```bash
 docker run -v $(pwd):/mnt -w /mnt subito_cart ./scripts/build.sh
 ```
