@@ -2,7 +2,9 @@ package router
 
 import (
 	"encoding/json"
+	"io"
 	"net/http"
+	"subito-cart/internal/error"
 	"subito-cart/internal/service"
 	"subito-cart/internal/validator"
 
@@ -11,8 +13,8 @@ import (
 
 type orderRequest struct {
 	Order struct {
-		Items []service.OrderItem `json:"items"`
-	} `json:"order"`
+		Items []service.OrderItem `json:"items" validate:"required"`
+	} `json:"order" validate:"required"`
 }
 
 type orderResponse struct {
@@ -27,21 +29,46 @@ func RegisterOrderRoutes(r *mux.Router) {
 }
 
 func handleOrder(w http.ResponseWriter, r *http.Request) {
+	// Read the request body
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		error.SendErrorResponse(w, http.StatusBadRequest, "Failed to read request body", []error.Error{
+			{
+				Field:   "body",
+				Message: "Could not read request body",
+				Code:    "READ_ERROR",
+			},
+		})
+		return
+	}
+
 	var req orderRequest
-	//Parsing
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "Invalid request", http.StatusBadRequest)
+	// Validate JSON and struct
+	if err := validator.ValidateJSON(body, &req); err != nil {
+		var validationErrors []error.Error
+		if ve, ok := err.(validator.ValidationErrors); ok {
+			for _, e := range ve {
+				validationErrors = append(validationErrors, error.Error{
+					Field:   e.Field,
+					Message: e.Message,
+					Code:    e.Tag,
+				})
+			}
+		}
+		error.SendErrorResponse(w, http.StatusBadRequest, "Invalid request", validationErrors)
 		return
 	}
-	//Reqeust Validation
-	if err := validator.ValidateStruct(&req); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
+
 	//Business Logic
 	orderID, totalPrice, totalVAT, pricedItems, err := service.CalculatePricing(req.Order.Items)
 	if err != nil {
-		http.Error(w, "Failed process order", http.StatusInternalServerError)
+		error.SendErrorResponse(w, http.StatusInternalServerError, "Failed to process order", []error.Error{
+			{
+				Field:   "order",
+				Message: err.Error(),
+				Code:    "PROCESSING_ERROR",
+			},
+		})
 		return
 	}
 
