@@ -15,7 +15,7 @@ type RequestValidator interface {
 
 type contextKey string
 
-const requestKey = contextKey("validated_request")
+const RequestKey = contextKey("validated_request")
 
 // WithRequestValidation creates a middleware that validates the request body
 func WithRequestValidation[T RequestValidator](next http.HandlerFunc) http.HandlerFunc {
@@ -54,7 +54,7 @@ func WithRequestValidation[T RequestValidator](next http.HandlerFunc) http.Handl
 		}
 
 		// Store the validated request in the context
-		ctx := context.WithValue(r.Context(), requestKey, req)
+		ctx := context.WithValue(r.Context(), RequestKey, req)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	}
 }

@@ -34,7 +34,7 @@ func RegisterOrderRoutes(r *mux.Router) {
 
 func handleOrder(w http.ResponseWriter, r *http.Request) {
 	// Get the validated request from context
-	req, ok := r.Context().Value("request").(orderRequest)
+	req, ok := r.Context().Value(middleware.RequestKey).(orderRequest)
 	if !ok {
 		errs.SendErrorResponse(w, http.StatusInternalServerError, "Failed to process request", []errs.Error{
 			{

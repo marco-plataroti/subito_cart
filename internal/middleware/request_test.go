@@ -21,7 +21,7 @@ func (m mockRequest) Validate() error {
 // testHandler captures if it's called and reads from context
 func testHandlerCalled(t *testing.T, expectName string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		val, ok := r.Context().Value(requestKey).(mockRequest)
+		val, ok := r.Context().Value(RequestKey).(mockRequest)
 		if !ok {
 			t.Errorf("expected mockRequest in context, got none")
 			w.WriteHeader(http.StatusInternalServerError)
