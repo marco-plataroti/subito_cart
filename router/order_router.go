@@ -2,11 +2,10 @@ package router
 
 import (
 	"encoding/json"
-	"io"
 	"net/http"
-	"subito-cart/internal/error"
+	"subito-cart/internal/errs"
+	"subito-cart/internal/middleware"
 	"subito-cart/internal/service"
-	"subito-cart/internal/validator"
 
 	"github.com/gorilla/mux"
 )
@@ -17,6 +16,11 @@ type orderRequest struct {
 	} `json:"order" validate:"required"`
 }
 
+// Validate implements the RequestValidator interface
+func (r orderRequest) Validate() error {
+	return nil // Additional validation can be added here
+}
+
 type orderResponse struct {
 	OrderID    int                  `json:"order_id"`
 	OrderPrice float64              `json:"order_price"`
@@ -25,44 +29,27 @@ type orderResponse struct {
 }
 
 func RegisterOrderRoutes(r *mux.Router) {
-	r.HandleFunc("/order", handleOrder).Methods("POST")
+	r.HandleFunc("/order", middleware.WithRequestValidation[orderRequest](handleOrder)).Methods("POST")
 }
 
 func handleOrder(w http.ResponseWriter, r *http.Request) {
-	// Read the request body
-	body, err := io.ReadAll(r.Body)
-	if err != nil {
-		error.SendErrorResponse(w, http.StatusBadRequest, "Failed to read request body", []error.Error{
+	// Get the validated request from context
+	req, ok := r.Context().Value("request").(orderRequest)
+	if !ok {
+		errs.SendErrorResponse(w, http.StatusInternalServerError, "Failed to process request", []errs.Error{
 			{
-				Field:   "body",
-				Message: "Could not read request body",
-				Code:    "READ_ERROR",
+				Field:   "request",
+				Message: "Invalid request context",
+				Code:    "CONTEXT_ERROR",
 			},
 		})
-		return
-	}
-
-	var req orderRequest
-	// Validate JSON and struct
-	if err := validator.ValidateJSON(body, &req); err != nil {
-		var validationErrors []error.Error
-		if ve, ok := err.(validator.ValidationErrors); ok {
-			for _, e := range ve {
-				validationErrors = append(validationErrors, error.Error{
-					Field:   e.Field,
-					Message: e.Message,
-					Code:    e.Tag,
-				})
-			}
-		}
-		error.SendErrorResponse(w, http.StatusBadRequest, "Invalid request", validationErrors)
 		return
 	}
 
 	//Business Logic
 	orderID, totalPrice, totalVAT, pricedItems, err := service.CalculatePricing(req.Order.Items)
 	if err != nil {
-		error.SendErrorResponse(w, http.StatusInternalServerError, "Failed to process order", []error.Error{
+		errs.SendErrorResponse(w, http.StatusInternalServerError, "Failed to process order", []errs.Error{
 			{
 				Field:   "order",
 				Message: err.Error(),
